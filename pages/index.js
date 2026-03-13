@@ -1,59 +1,97 @@
-
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function Home() {
-  const [url, setUrl] = useState('');
-  const [report, setReport] = useState(null);
+  const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [raw, setRaw] = useState("");
+  const [error, setError] = useState("");
 
   async function analyze() {
     setLoading(true);
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({url})
-    });
-    const data = await res.json();
-    setReport(data);
-    setLoading(false);
+    setRaw("");
+    setError("");
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const text = await res.text();
+      setRaw(text);
+
+      if (!res.ok) {
+        setError(`Request failed: ${res.status}`);
+      }
+    } catch (err) {
+      setError(err?.message || "Unknown browser error");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div style={{fontFamily:"Arial", maxWidth:700, margin:"40px auto"}}>
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        maxWidth: 800,
+        margin: "40px auto",
+        padding: 20,
+      }}
+    >
       <h1>Why Isn’t My Home Selling?</h1>
       <p>Paste your Zillow or MLS listing link.</p>
+
       <input
         value={url}
-        onChange={e=>setUrl(e.target.value)}
-        style={{width:"100%", padding:10}}
+        onChange={(e) => setUrl(e.target.value)}
         placeholder="Paste listing URL"
+        style={{
+          width: "100%",
+          padding: 12,
+          marginBottom: 12,
+          fontSize: 16,
+        }}
       />
-      <button onClick={analyze} style={{marginTop:10,padding:10}}>Analyze Listing</button>
 
-      {loading && <p>Analyzing listing...</p>}
+      <button
+        onClick={analyze}
+        style={{
+          padding: "12px 18px",
+          fontSize: 16,
+          cursor: "pointer",
+        }}
+      >
+        Analyze Listing
+      </button>
 
-      {report && (
-        <div style={{marginTop:30}}>
-          <h2>Top Reasons Your Home May Not Be Selling</h2>
-          <ul>
-            {report.reasons.map((r,i)=>(<li key={i}>{r}</li>))}
-          </ul>
+      {loading && <p style={{ marginTop: 20 }}>Analyzing listing...</p>}
 
-          <h3>Recommendations</h3>
-          <p>{report.recommendations}</p>
-
-          <hr/>
-
-          <h3>Want a second opinion from a local expert?</h3>
-          <form action="/api/lead" method="POST">
-            <input name="name" placeholder="Name" required /><br/>
-            <input name="email" placeholder="Email" required /><br/>
-            <input name="phone" placeholder="Phone" /><br/>
-            <input type="hidden" name="listing" value={url}/>
-            <button type="submit">Connect with a Local Expert</button>
-          </form>
+      {error && (
+        <div style={{ marginTop: 20, color: "red", fontWeight: "bold" }}>
+          {error}
         </div>
       )}
+
+      <div style={{ marginTop: 30 }}>
+        <h2>Raw API Response</h2>
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            background: "#f5f5f5",
+            padding: 16,
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            minHeight: 120,
+          }}
+        >
+          {raw || "No response yet."}
+        </pre>
+      </div>
     </div>
   );
 }
