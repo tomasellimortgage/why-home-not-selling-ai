@@ -1,9 +1,8 @@
-
 import OpenAI from "openai";
 
-export default async function handler(req,res){
+export default async function handler(req, res) {
 
-  const {url} = req.body;
+  const { url } = req.body;
 
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -11,42 +10,60 @@ export default async function handler(req,res){
 
   const prompt = `
 A homeowner submitted this listing:
+
 ${url}
 
-Provide the 5 most common reasons homes fail to sell:
-- pricing vs comps
-- photos
-- description quality
-- days on market perception
-- financing barriers
+Act as a real estate listing expert.
 
-Return JSON format:
+Give the 5 most likely reasons the home has not sold yet.
+
+Focus on:
+- price vs comps
+- photo quality
+- listing description
+- days on market
+- buyer financing obstacles
+
+Return JSON like this:
+
 {
- "reasons":[],
- "recommendations":""
+ "reasons": [
+   "reason 1",
+   "reason 2",
+   "reason 3",
+   "reason 4",
+   "reason 5"
+ ],
+ "recommendations": "summary advice"
 }
 `;
 
-  const response = await openai.responses.create({
-    model: process.env.OPENAI_MODEL || "gpt-5.4",
-    input: prompt
+  const completion = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    messages: [
+      { role: "user", content: prompt }
+    ],
+    temperature: 0.7
   });
 
-  let text = response.output[0].content[0].text;
+  const text = completion.choices[0].message.content;
 
-  try{
-    const json = JSON.parse(text);
-    res.json(json);
-  }catch{
-    res.json({
-      reasons:[
-        "Price may be higher than nearby comparable sales",
-        "Listing photos may not showcase the property effectively",
-        "Description may not target active buyers",
-        "Extended days on market may signal issues",
-        "Financing barriers such as taxes or HOA"
+  try {
+    const parsed = JSON.parse(text);
+    res.status(200).json(parsed);
+  } catch {
+
+    res.status(200).json({
+      reasons: [
+        "Listing price may be higher than comparable homes nearby",
+        "The first listing photo may not attract buyers",
+        "The description may not highlight buyer benefits",
+        "Long days on market can signal issues to buyers",
+        "Financing barriers like taxes or HOA could affect affordability"
       ],
-      recommendations:"Consider reviewing pricing strategy, improving listing photos, rewriting the description, and consulting a local expert."
+      recommendations:
+        "Consider reviewing pricing strategy, upgrading photos, rewriting the description, and getting a second opinion from a local expert."
     });
+
   }
 }
