@@ -52,7 +52,7 @@ Focus on:
       input: prompt,
     });
 
-    const text = response.output_text?.trim();
+    const text = (response.output_text || "").trim();
 
     if (!text) {
       return res.status(200).json({
