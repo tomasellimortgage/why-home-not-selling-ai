@@ -11,38 +11,39 @@ export default function Home() {
     setReport(null);
 
     try {
-      // 1. Get the Analysis
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address }),
       });
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Search failed");
+      
       setReport(data);
 
-      // 2. Fire-and-forget the lead (Don't let this block the UI)
+      // Background lead capture
       fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, analysis: data }),
-      }).catch(err => console.error("Background lead capture failed", err));
+        body: JSON.stringify({ address, report: data }),
+      }).catch(e => console.error("Lead sync failed", e));
 
     } catch (error) {
-      alert(`Search failed: ${error.message}`);
+      alert(`Oops: ${error.message}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "60px auto", padding: "20px", fontFamily: "Inter, sans-serif" }}>
-      <h1 style={{ fontSize: "2rem", marginBottom: "10px" }}>Why Isn't It Selling?</h1>
-      <p style={{ color: "#666", marginBottom: "20px" }}>Enter the property address to see a live market analysis.</p>
+    <div style={{ maxWidth: 600, margin: "80px auto", padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <h1 style={{ fontWeight: "800", fontSize: "2.5rem" }}>Why Isn't It Selling?</h1>
+      <p style={{ color: "#555" }}>We'll search the internet to find your listing and analyze the market data.</p>
       
       <input 
-        style={{ width: "100%", padding: "15px", fontSize: "16px", borderRadius: "8px", border: "1px solid #ddd", marginBottom: "15px" }}
-        placeholder="e.g. 623 N Guenther Ave, New Braunfels, TX"
+        style={{ width: "100%", padding: "16px", fontSize: "18px", borderRadius: "12px", border: "2px solid #eee", marginTop: "20px" }}
+        placeholder="623 N Guenther Ave, New Braunfels, TX"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
       />
@@ -50,22 +51,23 @@ export default function Home() {
       <button 
         onClick={startAnalysis}
         disabled={loading}
-        style={{ width: "100%", padding: "15px", backgroundColor: "#000", color: "#fff", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", opacity: loading ? 0.7 : 1 }}
+        style={{ width: "100%", padding: "16px", backgroundColor: "#000", color: "#fff", borderRadius: "12px", marginTop: "15px", cursor: "pointer", fontWeight: "bold" }}
       >
-        {loading ? "Searching Live Listings..." : "Analyze Property"}
+        {loading ? "AI is Researching the Web..." : "Analyze My Home"}
       </button>
 
-      {report && (
-        <div style={{ marginTop: "40px", animation: "fadeIn 0.5s ease" }}>
-          <h2 style={{ borderBottom: "2px solid #000", paddingBottom: "10px" }}>Market Insights</h2>
-          <ul style={{ paddingLeft: "20px" }}>
+      {/* SAFETY CHECK: report?.reasons prevents the 'Application Error' crash */}
+      {report && report.reasons && (
+        <div style={{ marginTop: "50px", borderTop: "2px solid #000", paddingTop: "30px" }}>
+          <h2>Listing Diagnostic</h2>
+          <ul style={{ lineHeight: "1.8" }}>
             {report.reasons.map((r, i) => (
-              <li key={i} style={{ marginBottom: "12px", fontSize: "17px" }}>{r}</li>
+              <li key={i}>{r}</li>
             ))}
           </ul>
-          <div style={{ backgroundColor: "#f4f4f4", padding: "20px", borderRadius: "8px", marginTop: "20px" }}>
-            <strong>Expert Recommendation:</strong>
-            <p style={{ marginTop: "10px", lineHeight: "1.5" }}>{report.recommendations}</p>
+          <div style={{ padding: "20px", background: "#f0f0f0", borderRadius: "10px", marginTop: "20px" }}>
+            <strong>Expert Verdict:</strong>
+            <p>{report.recommendations}</p>
           </div>
         </div>
       )}
