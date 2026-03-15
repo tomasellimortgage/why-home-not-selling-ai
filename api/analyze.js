@@ -12,26 +12,30 @@ export default async function handler(req, res) {
 
   try {
     const response = await client.chat.completions.create({
-      model: "gpt-4o", // Using standard 4o for higher stability
+      model: "gpt-4o-search-preview", 
       messages: [
         {
           role: "system",
-          content: "Search for this property. If you cannot find the specific listing, analyze the local market trends for that neighborhood/zip code instead. Always return valid JSON."
+          content: `You are a brutally honest Real Estate Investment Analyst. 
+          Your job is to find a specific property address online (Zillow, Redfin, etc.) and find 5 reasons why it hasn't sold yet.
+          Even if it looks like a good house, find flaws in the price history, the description, or the market competition.
+          
+          You MUST return this exact JSON structure:
+          {
+            "reasons": ["Reason 1", "Reason 2", "Reason 3", "Reason 4", "Reason 5"],
+            "recommendations": "One paragraph of strategic advice."
+          }`
         },
-        { role: "user", content: `Analyze: ${address}` }
+        { role: "user", content: `Analyze this property: ${address}` }
       ],
       tools: [{ type: "web_search" }],
-      response_format: { type: "json_object" } // Using standard json_object for broader compatibility
+      response_format: { type: "json_object" }
     });
 
-    const content = response.choices[0].message.content;
-    
-    // LOGGING: This shows up in your Vercel Dashboard -> Logs
-    console.log("AI Output:", content);
-
-    res.status(200).json(JSON.parse(content));
+    const content = JSON.parse(response.choices[0].message.content);
+    res.status(200).json(content);
   } catch (error) {
-    console.error("Detailed Error:", error);
-    res.status(500).json({ error: "Analysis failed", details: error.message });
+    console.error("AI Error:", error);
+    res.status(500).json({ error: "Analysis failed. Please try a different address." });
   }
 }
