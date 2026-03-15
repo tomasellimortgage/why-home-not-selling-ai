@@ -1,69 +1,29 @@
-import { useState } from "react";
-
-export default function Home() {
-  const [address, setAddress] = useState("");
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  async function startAnalysis() {
-    if (!address) return alert("Please enter an address.");
-    setLoading(true);
-    setReport(null);
-
-    try {
-      // 1. POINT TO THE ANALYZE ENDPOINT
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.details || "AI Search failed");
-      
-      setReport(data);
-    } catch (e) {
-      alert("Error: " + e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={{ maxWidth: 600, margin: "60px auto", padding: "20px", fontFamily: "sans-serif" }}>
-      <h1 style={{ fontWeight: "800" }}>Home Listing Diagnostic</h1>
-      <p style={{ color: "#666" }}>AI will search for ${address || 'the property'} and analyze market flaws.</p>
-      
-      <input 
-        style={{ width: "100%", padding: "15px", fontSize: "16px", borderRadius: "8px", border: "1px solid #ddd" }}
-        placeholder="Enter address (e.g. 123 Main St, Austin, TX)"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-      />
-
-      <button 
-        onClick={startAnalysis} 
-        disabled={loading}
-        style={{ width: "100%", marginTop: "10px", padding: "15px", backgroundColor: "#000", color: "#fff", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}
-      >
-        {loading ? "AI is Searching the Web..." : "Run Analysis"}
-      </button>
-
-      {report && (
-        <div style={{ marginTop: "40px", borderTop: "2px solid #000", paddingTop: "20px" }}>
-          <h2>Listing Report</h2>
-          <ul>
-            {report.reasons?.map((r, i) => (
-              <li key={i} style={{ marginBottom: "10px", fontSize: "17px" }}>{r}</li>
-            ))}
-          </ul>
-          <div style={{ padding: "20px", background: "#f4f4f4", borderRadius: "8px", marginTop: "20px" }}>
-            <strong>Expert Recommendation:</strong>
-            <p style={{ marginTop: "10px" }}>{report.recommendations}</p>
-          </div>
-        </div>
-      )}
+// Replace your Home() return with this to see the results correctly
+{report && (
+  <div style={{ marginTop: 40, borderTop: "3px solid #000", textAlign: "left" }}>
+    <h2>6-Point Listing Analysis</h2>
+    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0052ff' }}>
+      Visual Score: {report.visualScore}/10
     </div>
-  );
-}
+    
+    <h3>Diagnostic Points:</h3>
+    <ul>{report.analysis?.map((item, i) => <li key={i}>{item}</li>)}</ul>
+
+    <div style={{ background: "#f0f7ff", padding: "20px", borderRadius: "10px", borderLeft: "5px solid #0052ff" }}>
+      <h4>Listing Rescue Strategy</h4>
+      <p>{report.rescueStrategy}</p>
+    </div>
+
+    <div style={{ marginTop: "20px", padding: "20px", background: "#fffbe6", border: "1px solid #ffe58f" }}>
+      <h4>Transition Strategy (Steve Tomaselli)</h4>
+      <p>{report.steveTomaselliOffer}</p>
+      <button style={{ background: 'green', color: 'white', padding: '10px', borderRadius: '5px' }}>
+        Request a Consultation with Steve
+      </button>
+    </div>
+    
+    <p style={{ marginTop: "20px", fontStyle: "italic" }}>
+      <strong>In one sentence:</strong> {report.oneSentenceSummary}
+    </p>
+  </div>
+)}
