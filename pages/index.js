@@ -3,12 +3,14 @@ import { useState } from "react";
 export default function Home() {
   const [address, setAddress] = useState("");
   const [report, setReport] = useState(null);
+  const [status, setStatus] = useState(""); // New status tracker
   const [loading, setLoading] = useState(false);
 
   async function startAnalysis() {
     if (!address) return alert("Please enter an address.");
     setLoading(true);
     setReport(null);
+    setStatus("Searching the internet for your home...");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -17,58 +19,49 @@ export default function Home() {
         body: JSON.stringify({ address }),
       });
       
+      setStatus("Processing market data...");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Search failed");
+      
+      if (!res.ok) throw new Error(data.details || "The search failed.");
       
       setReport(data);
-
-      // Background lead capture
-      fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, report: data }),
-      }).catch(e => console.error("Lead sync failed", e));
-
+      setStatus("Analysis complete!");
     } catch (error) {
-      alert(`Oops: ${error.message}`);
+      console.error(error);
+      setStatus("");
+      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "80px auto", padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1 style={{ fontWeight: "800", fontSize: "2.5rem" }}>Why Isn't It Selling?</h1>
-      <p style={{ color: "#555" }}>We'll search the internet to find your listing and analyze the market data.</p>
-      
+    <div style={{ maxWidth: 600, margin: "60px auto", padding: "20px", fontFamily: "sans-serif" }}>
+      <h1>Home Analysis Bot</h1>
       <input 
-        style={{ width: "100%", padding: "16px", fontSize: "18px", borderRadius: "12px", border: "2px solid #eee", marginTop: "20px" }}
-        placeholder="623 N Guenther Ave, New Braunfels, TX"
+        style={{ width: "100%", padding: "12px", marginBottom: "10px" }}
+        placeholder="Enter address..."
         value={address}
         onChange={(e) => setAddress(e.target.value)}
       />
-
       <button 
-        onClick={startAnalysis}
+        onClick={startAnalysis} 
         disabled={loading}
-        style={{ width: "100%", padding: "16px", backgroundColor: "#000", color: "#fff", borderRadius: "12px", marginTop: "15px", cursor: "pointer", fontWeight: "bold" }}
+        style={{ width: "100%", padding: "12px", cursor: "pointer", backgroundColor: "#000", color: "#fff" }}
       >
-        {loading ? "AI is Researching the Web..." : "Analyze My Home"}
+        {loading ? "Working..." : "Analyze Home"}
       </button>
 
-      {/* SAFETY CHECK: report?.reasons prevents the 'Application Error' crash */}
-      {report && report.reasons && (
-        <div style={{ marginTop: "50px", borderTop: "2px solid #000", paddingTop: "30px" }}>
-          <h2>Listing Diagnostic</h2>
-          <ul style={{ lineHeight: "1.8" }}>
-            {report.reasons.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
+      {/* This helps you see where it's getting stuck */}
+      {loading && <p style={{ color: "blue", marginTop: "10px" }}>{status}</p>}
+
+      {report && (
+        <div style={{ marginTop: "30px", padding: "20px", background: "#f9f9f9" }}>
+          <h2>Results</h2>
+          <ul>
+            {report.reasons?.map((r, i) => <li key={i}>{r}</li>) || <li>No reasons found.</li>}
           </ul>
-          <div style={{ padding: "20px", background: "#f0f0f0", borderRadius: "10px", marginTop: "20px" }}>
-            <strong>Expert Verdict:</strong>
-            <p>{report.recommendations}</p>
-          </div>
+          <p><strong>Recommendation:</strong> {report.recommendations || "No recommendation available."}</p>
         </div>
       )}
     </div>
