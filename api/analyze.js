@@ -1,52 +1,35 @@
-
 import OpenAI from "openai";
 
-export default async function handler(req,res){
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  const {url} = req.body;
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: "Missing URL" });
 
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const prompt = `
-A homeowner submitted this listing:
-${url}
-
-Provide the 5 most common reasons homes fail to sell:
-- pricing vs comps
-- photos
-- description quality
-- days on market perception
-- financing barriers
-
-Return JSON format:
-{
- "reasons":[],
- "recommendations":""
-}
-`;
-
-  const response = await openai.responses.create({
-    model: process.env.OPENAI_MODEL || "gpt-5.4",
-    input: prompt
-  });
-
-  let text = response.output[0].content[0].text;
-
-  try{
-    const json = JSON.parse(text);
-    res.json(json);
-  }catch{
-    res.json({
-      reasons:[
-        "Price may be higher than nearby comparable sales",
-        "Listing photos may not showcase the property effectively",
-        "Description may not target active buyers",
-        "Extended days on market may signal issues",
-        "Financing barriers such as taxes or HOA"
-      ],
-      recommendations:"Consider reviewing pricing strategy, improving listing photos, rewriting the description, and consulting a local expert."
+  try {
+    const response = await client.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+      tools: [{ type: "web_search_preview" }], // This allows the AI to visit the link
+      input: `Open this Zillow listing: ${url}. 
+      Analyze why it isn't selling by looking at the price history, days on market, and description quality. 
+      Return the analysis in this JSON format:
+      {
+        "reasons": ["Reason 1", "Reason 2", "Reason 3", "Reason 4", "Reason 5"],
+        "recommendations": "Provide a summary of advice here."
+      }`,
+      response_format: { type: "json_object" } 
     });
+
+    // Extract the text from the response items
+    const text = response.output[0].text;
+    res.status(200).json(JSON.parse(text));
+
+  } catch (error) {
+    console.error("ANALYSIS ERROR:", error);
+    res.status(500).json({ error: "Analysis failed. Please try again." });
   }
 }
