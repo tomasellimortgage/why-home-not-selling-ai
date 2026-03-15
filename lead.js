@@ -1,21 +1,16 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method not allowed");
-  }
+  const webhook = process.env.LEAD_WEBHOOK_URL;
 
   try {
-    const webhook = process.env.LEAD_WEBHOOK_URL;
+    const response = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
 
-    if (webhook) {
-      await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req.body || {}),
-      });
-    }
-
-    return res.status(200).send("Thank you! A local expert will contact you shortly.");
+    if (!response.ok) throw new Error("Webhook failed");
+    res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).send("Lead submission failed.");
+    res.status(500).json({ error: "Lead capture failed" });
   }
 }
