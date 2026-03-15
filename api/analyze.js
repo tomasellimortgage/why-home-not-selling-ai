@@ -1,36 +1,40 @@
 import OpenAI from "openai";
 
+// This tells Vercel to allow this function to run for up to 60 seconds
+export const config = {
+  maxDuration: 60,
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { address } = req.body; // We now take 'address' instead of 'url'
-  if (!address) return res.status(400).json({ error: "No address provided" });
+  const { address } = req.body;
+  if (!address) return res.status(400).json({ error: "Address is required" });
 
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   try {
     const response = await client.chat.completions.create({
-      model: "gpt-4o-search-preview", // 2026 model with native web search
+      model: "gpt-4o-mini-search-preview", // Fast search-enabled model
       messages: [
         {
           role: "system",
-          content: "You are a real estate expert. Search for the provided property address. Analyze its current listing status, price history, and photos. Return ONLY a JSON object with keys 'reasons' (array) and 'recommendations' (string)."
+          content: "You are a real estate analyst. Search for the property address provided. Identify why it isn't selling (price, market trends, etc.). Return ONLY JSON: { \"reasons\": [], \"recommendations\": \"\" }"
         },
         {
           role: "user",
-          content: `Why isn't this home selling? Address: ${address}`
+          content: `Analyze this home: ${address}`
         }
       ],
-      web_search_options: {
-        user_location: { type: "approximate", approximate: { country: "US" } }
-      },
+      // This is the tool for 2026 search
+      tools: [{ type: "web_search_preview" }], 
       response_format: { type: "json_object" }
     });
 
     const content = JSON.parse(response.choices[0].message.content);
     res.status(200).json(content);
   } catch (error) {
-    console.error("ANALYSIS ERROR:", error);
-    res.status(500).json({ error: "The AI could not find that address. Try adding city and state." });
+    console.error("SEARCH ERROR:", error);
+    res.status(500).json({ error: "Search timed out. Try a more specific address (City, State)." });
   }
 }
