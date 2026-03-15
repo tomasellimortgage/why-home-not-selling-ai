@@ -7,9 +7,10 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "14.2.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "openai": "^4.56.0"
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "openai": "^4.56.0",
+    "zod": "^3.23.0"
   }
 }
