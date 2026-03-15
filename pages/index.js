@@ -17,12 +17,12 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
       
-      if (!res.ok) throw new Error("Analysis failed");
-      
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Analysis failed");
+      
       setReport(data);
     } catch (error) {
-      alert("Error analyzing listing. Ensure the URL is public.");
+      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -30,22 +30,27 @@ export default function Home() {
 
   return (
     <div style={{ maxWidth: 600, margin: "50px auto", padding: 20, fontFamily: "sans-serif" }}>
-      <h1>Home Listing Analyzer</h1>
+      <h1>Why Isn’t My Home Selling?</h1>
+      <p>Paste your Zillow or MLS link below:</p>
       <input 
-        style={{ width: "100%", padding: 10, marginBottom: 10 }}
-        placeholder="Paste Zillow URL here..."
+        style={{ width: "100%", padding: 12, marginBottom: 10, borderRadius: 5, border: "1px solid #ccc" }}
+        placeholder="https://www.zillow.com/homedetails/..."
         value={url}
         onChange={(e) => setUrl(e.target.value)}
       />
-      <button onClick={analyze} disabled={loading} style={{ padding: "10px 20px", cursor: "pointer" }}>
-        {loading ? "Analyzing..." : "Find Out Why It's Not Selling"}
+      <button 
+        onClick={analyze} 
+        disabled={loading} 
+        style={{ width: "100%", padding: 12, backgroundColor: "#0070f3", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}
+      >
+        {loading ? "Analyzing Listing..." : "Analyze Listing"}
       </button>
 
       {report && (
-        <div style={{ marginTop: 30, borderTop: "1px solid #ccc", paddingTop: 20 }}>
-          <h2>Top 5 Reasons:</h2>
-          <ul>{report.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
-          <h3>Our Recommendation:</h3>
+        <div style={{ marginTop: 40, padding: 20, backgroundColor: "#f9f9f9", borderRadius: 10 }}>
+          <h2>Analysis Report</h2>
+          <ul>{report.reasons.map((r, i) => <li key={i} style={{ marginBottom: 10 }}>{r}</li>)}</ul>
+          <h3>Our Recommendation</h3>
           <p>{report.recommendations}</p>
         </div>
       )}
